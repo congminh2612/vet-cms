@@ -1,0 +1,856 @@
+{
+  "info": {
+    "_postman_id": "vet-api-collection",
+    "name": "Vet API - Hệ thống Quản lý Cửa hàng Thuốc Thú y",
+    "description": "Collection đầy đủ các endpoints cho hệ thống quản lý cửa hàng thuốc thú y",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.token) {",
+                  "        pm.collectionVariables.set(\"authToken\", jsonData.token);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Đăng ký user mới"
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.token) {",
+                  "        pm.collectionVariables.set(\"authToken\", jsonData.token);",
+                  "        console.log(\"Token saved:\", jsonData.token);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Đăng nhập và lưu token tự động"
+          }
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "me"]
+            },
+            "description": "Lấy thông tin user hiện tại"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Products",
+      "item": [
+        {
+          "name": "Get All Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products?page=1&limit=20&search=&sortBy=createdAt&order=desc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Số trang"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Số lượng mỗi trang"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Tìm kiếm theo tên",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "description": "Sắp xếp theo field"
+                },
+                {
+                  "key": "order",
+                  "value": "desc",
+                  "description": "asc hoặc desc"
+                }
+              ]
+            },
+            "description": "Lấy danh sách sản phẩm với phân trang và tìm kiếm"
+          }
+        },
+        {
+          "name": "Get Product By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Lấy chi tiết sản phẩm"
+          }
+        },
+        {
+          "name": "Create Product",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Thuốc kháng sinh Amoxicillin 250mg\",\n  \"unit\": \"viên\",\n  \"costPrice\": 5000,\n  \"sellPrice\": 8000,\n  \"stock\": 0\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products"]
+            },
+            "description": "Tạo sản phẩm mới"
+          }
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Thuốc kháng sinh Amoxicillin 250mg (Updated)\",\n  \"unit\": \"viên\",\n  \"costPrice\": 5500,\n  \"sellPrice\": 8500\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/products/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Cập nhật sản phẩm"
+          }
+        },
+        {
+          "name": "Delete Product",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Xóa sản phẩm"
+          }
+        },
+        {
+          "name": "Get Low Stock Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/low-stock?threshold=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "low-stock"],
+              "query": [
+                {
+                  "key": "threshold",
+                  "value": "10",
+                  "description": "Ngưỡng cảnh báo"
+                }
+              ]
+            },
+            "description": "Lấy danh sách sản phẩm tồn kho thấp"
+          }
+        },
+        {
+          "name": "Get Product Stock Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/:productId/stock-logs?type=&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", ":productId", "stock-logs"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "",
+                  "description": "IN hoặc OUT",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "productId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Lấy lịch sử nhập/xuất kho của một sản phẩm"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Stock Logs",
+      "item": [
+        {
+          "name": "Get All Stock Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/stock-logs?page=1&limit=20&productId=&type=&startDate=&endDate=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "stock-logs"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "productId",
+                  "value": "",
+                  "description": "Lọc theo sản phẩm",
+                  "disabled": true
+                },
+                {
+                  "key": "type",
+                  "value": "",
+                  "description": "IN hoặc OUT",
+                  "disabled": true
+                },
+                {
+                  "key": "startDate",
+                  "value": "",
+                  "description": "YYYY-MM-DD",
+                  "disabled": true
+                },
+                {
+                  "key": "endDate",
+                  "value": "",
+                  "description": "YYYY-MM-DD",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Lấy lịch sử nhập/xuất kho"
+          }
+        },
+        {
+          "name": "Get Stock Log By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/stock-logs/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "stock-logs", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Lấy chi tiết một log nhập/xuất kho"
+          }
+        },
+        {
+          "name": "Stock In (Nhập kho)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": 1,\n  \"quantity\": 100,\n  \"note\": \"Nhập từ nhà cung cấp ABC\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/stock-logs/in",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "stock-logs", "in"]
+            },
+            "description": "Nhập kho (tăng tồn kho) - Tự động cập nhật stock của Product"
+          }
+        },
+        {
+          "name": "Stock Out (Xuất kho)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": 1,\n  \"quantity\": 50,\n  \"note\": \"Bán cho khách hàng\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/stock-logs/out",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "stock-logs", "out"]
+            },
+            "description": "Xuất kho (giảm tồn kho) - Cần kiểm tra stock đủ không"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Customers",
+      "item": [
+        {
+          "name": "Get All Customers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/customers?page=1&limit=20&search=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "customers"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Tìm kiếm theo tên, số điện thoại",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Lấy danh sách khách hàng"
+          }
+        },
+        {
+          "name": "Get Customer By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/customers/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "customers", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Lấy chi tiết khách hàng"
+          }
+        },
+        {
+          "name": "Create Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Phòng khám ABC\",\n  \"phone\": \"0901234567\",\n  \"address\": \"123 Đường XYZ\",\n  \"note\": \"Khách hàng VIP\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/customers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "customers"]
+            },
+            "description": "Tạo khách hàng mới - Chỉ name là bắt buộc"
+          }
+        },
+        {
+          "name": "Update Customer",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Phòng khám ABC (Updated)\",\n  \"phone\": \"0901234568\",\n  \"address\": \"456 Đường New\",\n  \"note\": \"Ghi chú mới\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/customers/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "customers", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Cập nhật khách hàng"
+          }
+        },
+        {
+          "name": "Delete Customer",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/customers/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "customers", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Xóa khách hàng"
+          }
+        },
+        {
+          "name": "Get Top Customers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/customers/top?limit=10&startDate=&endDate=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "customers", "top"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Số lượng"
+                },
+                {
+                  "key": "startDate",
+                  "value": "",
+                  "description": "YYYY-MM-DD",
+                  "disabled": true
+                },
+                {
+                  "key": "endDate",
+                  "value": "",
+                  "description": "YYYY-MM-DD",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Thống kê top khách hàng mua nhiều"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Cash Logs",
+      "item": [
+        {
+          "name": "Get All Cash Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cash-logs?page=1&limit=20&type=&customerId=&startDate=&endDate=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cash-logs"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "type",
+                  "value": "",
+                  "description": "IN hoặc OUT",
+                  "disabled": true
+                },
+                {
+                  "key": "customerId",
+                  "value": "",
+                  "description": "Lọc theo khách hàng",
+                  "disabled": true
+                },
+                {
+                  "key": "startDate",
+                  "value": "",
+                  "description": "YYYY-MM-DD",
+                  "disabled": true
+                },
+                {
+                  "key": "endDate",
+                  "value": "",
+                  "description": "YYYY-MM-DD",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Lấy danh sách giao dịch thu chi"
+          }
+        },
+        {
+          "name": "Get Cash Log By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cash-logs/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cash-logs", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Lấy chi tiết giao dịch"
+          }
+        },
+        {
+          "name": "Cash In (Thu tiền thông thường)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 400000,\n  \"customerId\": 1,\n  \"note\": \"Thu tiền dịch vụ\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cash-logs/in",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cash-logs", "in"]
+            },
+            "description": "Tạo giao dịch thu tiền thông thường (không có items)"
+          }
+        },
+        {
+          "name": "Cash In với Items (Bán hàng)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": 1,\n  \"note\": \"Bán hàng cho khách hàng A\",\n  \"items\": [\n    {\n      \"productId\": 1,\n      \"quantity\": 50,\n      \"unitPrice\": 8000\n    },\n    {\n      \"productId\": 2,\n      \"quantity\": 20,\n      \"unitPrice\": 12000\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cash-logs/in",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cash-logs", "in"]
+            },
+            "description": "Bán hàng với items - Tự động tính tổng tiền, xuất kho và cập nhật stock. Mỗi item có: productId, quantity, unitPrice (optional - nếu không có sẽ dùng Product.sellPrice)"
+          }
+        },
+        {
+          "name": "Cash Out (Chi tiền)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 500000,\n  \"note\": \"Mua hàng từ nhà cung cấp XYZ\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cash-logs/out",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cash-logs", "out"]
+            },
+            "description": "Tạo giao dịch chi tiền (Chi ra)"
+          }
+        },
+        {
+          "name": "Update Cash Log",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 450000,\n  \"note\": \"Cập nhật ghi chú\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cash-logs/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cash-logs", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Cập nhật giao dịch"
+          }
+        },
+        {
+          "name": "Delete Cash Log",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cash-logs/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cash-logs", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Xóa giao dịch"
+          }
+        },
+        {
+          "name": "Get Cash Log Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cash-logs/stats?startDate=&endDate=&type=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cash-logs", "stats"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "",
+                  "description": "YYYY-MM-DD",
+                  "disabled": true
+                },
+                {
+                  "key": "endDate",
+                  "value": "",
+                  "description": "YYYY-MM-DD",
+                  "disabled": true
+                },
+                {
+                  "key": "type",
+                  "value": "",
+                  "description": "IN hoặc OUT",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Thống kê thu chi"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Dashboard",
+      "item": [
+        {
+          "name": "Get Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dashboard"]
+            },
+            "description": "Dashboard tổng quan"
+          }
+        },
+        {
+          "name": "Get Sales By Date",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/sales-by-date?startDate=2025-01-01&endDate=2025-01-31&groupBy=day",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dashboard", "sales-by-date"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2025-01-01",
+                  "description": "Ngày bắt đầu"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2025-01-31",
+                  "description": "Ngày kết thúc"
+                },
+                {
+                  "key": "groupBy",
+                  "value": "day",
+                  "description": "day, week, month"
+                }
+              ]
+            },
+            "description": "Thống kê doanh thu theo thời gian"
+          }
+        }
+      ]
+    }
+  ]
+}
