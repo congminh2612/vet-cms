@@ -204,14 +204,14 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Thuốc kháng sinh Amoxicillin 250mg\",\n  \"unit\": \"viên\",\n  \"costPrice\": 5000,\n  \"sellPrice\": 8000,\n  \"stock\": 0\n}"
+              "raw": "{\n  \"name\": \"Thuốc kháng sinh Amoxicillin 250mg\",\n  \"unit\": \"viên\",\n  \"costPrice\": 5000,\n  \"sellPrice\": 8000,\n  \"stock\": 0,\n  \"supplierId\": 1\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/products",
               "host": ["{{baseUrl}}"],
               "path": ["api", "products"]
             },
-            "description": "Tạo sản phẩm mới"
+            "description": "Tạo sản phẩm mới - supplierId là optional"
           }
         },
         {
@@ -584,6 +584,33 @@
             },
             "description": "Thống kê top khách hàng mua nhiều"
           }
+        },
+        {
+          "name": "Get Customer Debts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/customers/:customerId/debts?status=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "customers", ":customerId", "debts"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "PENDING, PARTIAL, hoặc PAID",
+                  "disabled": true
+                }
+              ],
+              "variable": [
+                {
+                  "key": "customerId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Lấy danh sách công nợ của một khách hàng"
+          }
         }
       ]
     },
@@ -679,7 +706,7 @@
           }
         },
         {
-          "name": "Cash In với Items (Bán hàng)",
+          "name": "Cash In với Items (Bán hàng trả đủ)",
           "request": {
             "method": "POST",
             "header": [
@@ -697,7 +724,29 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "cash-logs", "in"]
             },
-            "description": "Bán hàng với items - Tự động tính tổng tiền, xuất kho và cập nhật stock. Mỗi item có: productId, quantity, unitPrice (optional - nếu không có sẽ dùng Product.sellPrice)"
+            "description": "Bán hàng trả đủ - Tự động tính tổng tiền, xuất kho và cập nhật stock"
+          }
+        },
+        {
+          "name": "Cash In với Items (Bán hàng NỢ)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": 1,\n  \"note\": \"Bán hàng nợ cho khách hàng A\",\n  \"paidAmount\": 500000,\n  \"items\": [\n    {\n      \"productId\": 1,\n      \"quantity\": 50,\n      \"unitPrice\": 20000\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cash-logs/in",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cash-logs", "in"]
+            },
+            "description": "Bán hàng NỢ - paidAmount là số tiền khách trả ngay. Nếu paidAmount < tổng tiền → tự động tạo công nợ. Yêu cầu phải có customerId"
           }
         },
         {
@@ -848,6 +897,299 @@
               ]
             },
             "description": "Thống kê doanh thu theo thời gian"
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Suppliers (Nhà cung cấp)",
+      "item": [
+        {
+          "name": "Get All Suppliers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/suppliers?page=1&limit=20&search=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "suppliers"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Tìm kiếm theo tên, SĐT",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Lấy danh sách nhà cung cấp"
+          }
+        },
+        {
+          "name": "Get Supplier By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/suppliers/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "suppliers", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Lấy chi tiết nhà cung cấp (bao gồm danh sách sản phẩm)"
+          }
+        },
+        {
+          "name": "Create Supplier",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Công ty TNHH ABC\",\n  \"phone\": \"0901234567\",\n  \"address\": \"123 Đường XYZ, Quận 1, TP.HCM\",\n  \"note\": \"Nhà cung cấp thuốc kháng sinh\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/suppliers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "suppliers"]
+            },
+            "description": "Tạo nhà cung cấp mới"
+          }
+        },
+        {
+          "name": "Update Supplier",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Công ty TNHH ABC (Updated)\",\n  \"phone\": \"0901234568\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/suppliers/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "suppliers", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Cập nhật nhà cung cấp"
+          }
+        },
+        {
+          "name": "Delete Supplier",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/suppliers/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "suppliers", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Xóa nhà cung cấp (chỉ xóa được nếu không có sản phẩm liên kết)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Debts (Công nợ)",
+      "item": [
+        {
+          "name": "Get All Debts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/debts?page=1&limit=20&customerId=&status=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "debts"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "customerId",
+                  "value": "",
+                  "description": "Lọc theo khách hàng",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "PENDING, PARTIAL, hoặc PAID",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Lấy danh sách công nợ"
+          }
+        },
+        {
+          "name": "Get Debt Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/debts/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "debts", "stats"]
+            },
+            "description": "Thống kê công nợ - Tổng nợ, top khách nợ nhiều"
+          }
+        },
+        {
+          "name": "Get Debt By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/debts/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "debts", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Lấy chi tiết công nợ (bao gồm lịch sử trả nợ)"
+          }
+        },
+        {
+          "name": "Pay Debt (Trả nợ)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 200000,\n  \"note\": \"Trả nợ lần 1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/debts/:id/pay",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "debts", ":id", "pay"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Trả nợ - Tự động cập nhật trạng thái công nợ và tạo CashLog IN"
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Invoices (Hóa đơn)",
+      "item": [
+        {
+          "name": "Get All Invoices",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/invoices?page=1&limit=20&customerId=&startDate=&endDate=&hasDebt=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "invoices"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "customerId",
+                  "value": "",
+                  "description": "Lọc theo khách hàng",
+                  "disabled": true
+                },
+                {
+                  "key": "startDate",
+                  "value": "",
+                  "description": "YYYY-MM-DD",
+                  "disabled": true
+                },
+                {
+                  "key": "endDate",
+                  "value": "",
+                  "description": "YYYY-MM-DD",
+                  "disabled": true
+                },
+                {
+                  "key": "hasDebt",
+                  "value": "",
+                  "description": "true hoặc false - Lọc hóa đơn có nợ",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Lấy danh sách hóa đơn bán hàng"
+          }
+        },
+        {
+          "name": "Get Invoice By ID (Để in)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/invoices/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "invoices", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Lấy chi tiết hóa đơn để in - Bao gồm thông tin khách hàng, sản phẩm, công nợ"
           }
         }
       ]
