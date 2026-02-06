@@ -73,6 +73,9 @@ export function CashPage() {
       queryClient.invalidateQueries({ queryKey: ["cash-logs"] });
       queryClient.invalidateQueries({ queryKey: ["cash-logs-stats"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      queryClient.invalidateQueries({ queryKey: ["debts"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
     },
     onError: (error: unknown) => {
       const err = error as { response?: { data?: { message?: string } } };
@@ -88,6 +91,9 @@ export function CashPage() {
       queryClient.invalidateQueries({ queryKey: ["cash-logs"] });
       queryClient.invalidateQueries({ queryKey: ["cash-logs-stats"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      queryClient.invalidateQueries({ queryKey: ["debts"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
     },
     onError: (error: unknown) => {
       const err = error as { response?: { data?: { message?: string } } };
@@ -109,6 +115,9 @@ export function CashPage() {
       queryClient.invalidateQueries({ queryKey: ["cash-logs"] });
       queryClient.invalidateQueries({ queryKey: ["cash-logs-stats"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      queryClient.invalidateQueries({ queryKey: ["debts"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
     },
     onError: (error: unknown) => {
       const err = error as { response?: { data?: { message?: string } } };
@@ -126,6 +135,9 @@ export function CashPage() {
       queryClient.invalidateQueries({ queryKey: ["cash-logs"] });
       queryClient.invalidateQueries({ queryKey: ["cash-logs-stats"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      queryClient.invalidateQueries({ queryKey: ["debts"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
     },
     onError: (error: unknown) => {
       const err = error as { response?: { data?: { message?: string } } };

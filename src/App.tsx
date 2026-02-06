@@ -10,6 +10,8 @@ import { CustomersPage } from "@/feature/customers/CustomersPage";
 import { StockPage } from "@/feature/stock/StockPage";
 import { CashPage } from "@/feature/cash/CashPage";
 import { ReportsPage } from "@/feature/reports/ReportsPage";
+import { DebtsPage } from "@/feature/debts/DebtsPage";
+import { InvoicesPage } from "@/feature/invoices/InvoicesPage";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("authToken");
@@ -36,6 +38,8 @@ function App() {
             <Route path="stock" element={<StockPage />} />
             <Route path="customers" element={<CustomersPage />} />
             <Route path="cash" element={<CashPage />} />
+            <Route path="debts" element={<DebtsPage />} />
+            <Route path="invoices" element={<InvoicesPage />} />
             <Route path="reports" element={<ReportsPage />} />
           </Route>
         </Routes>

@@ -7,22 +7,40 @@ import type {
   TopCustomer,
   TopCustomersQueryParams,
   UpdateCustomerRequest,
+  Debt,
+  DebtStatus,
 } from "@/types/api.types";
 
 export const customersService = {
   getAll: async (
     params?: CustomersQueryParams
   ): Promise<PaginatedResponse<Customer>> => {
-    const response = await apiClient.get<PaginatedResponse<Customer>>(
-      "/customers",
-      { params }
-    );
-    return response.data;
+    const response = await apiClient.get<{
+      success: boolean;
+      data: Customer[];
+      pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+      };
+    }>("/customers", { params });
+    // Map từ API response format sang PaginatedResponse format
+    return {
+      data: response.data.data || [],
+      page: response.data.pagination?.page || 1,
+      limit: response.data.pagination?.limit || 20,
+      total: response.data.pagination?.total || 0,
+      totalPages: response.data.pagination?.totalPages || 0,
+    };
   },
 
   getById: async (id: number): Promise<Customer> => {
-    const response = await apiClient.get<Customer>(`/customers/${id}`);
-    return response.data;
+    const response = await apiClient.get<{
+      success: boolean;
+      data: Customer;
+    }>(`/customers/${id}`);
+    return response.data.data;
   },
 
   create: async (data: CreateCustomerRequest): Promise<Customer> => {
@@ -49,6 +67,19 @@ export const customersService = {
       params,
     });
     return response.data;
+  },
+
+  getCustomerDebts: async (
+    customerId: number,
+    status?: DebtStatus
+  ): Promise<Debt[]> => {
+    const response = await apiClient.get<{
+      success: boolean;
+      data: Debt[];
+    }>(`/customers/${customerId}/debts`, {
+      params: status ? { status } : undefined,
+    });
+    return response.data.data || [];
   },
 };
 

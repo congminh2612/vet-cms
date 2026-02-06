@@ -8,6 +8,8 @@ import {
   Warehouse,
   Menu,
   X,
+  Receipt,
+  CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -19,6 +21,8 @@ const menuItems = [
   { path: "/stock", label: "Kho hàng", icon: Warehouse },
   { path: "/customers", label: "Khách hàng", icon: Users },
   { path: "/cash", label: "Thu chi", icon: TrendingUp },
+  { path: "/debts", label: "Công nợ", icon: CreditCard },
+  { path: "/invoices", label: "Hóa đơn", icon: Receipt },
   { path: "/reports", label: "Báo cáo", icon: FileText },
 ];
 

@@ -462,7 +462,7 @@
                 }
               ]
             },
-            "description": "Lấy danh sách khách hàng"
+            "description": "Lấy danh sách khách hàng - Response bao gồm: totalDebt (tổng nợ), debtCount (số khoản nợ chưa thanh toán)"
           }
         },
         {
@@ -481,7 +481,7 @@
                 }
               ]
             },
-            "description": "Lấy chi tiết khách hàng"
+            "description": "Lấy chi tiết khách hàng - Response bao gồm: debts (danh sách công nợ chi tiết với payments), totalDebt (tổng nợ còn lại), pendingDebts (số khoản nợ chưa trả hết), totalSpent, totalOrders"
           }
         },
         {
@@ -582,7 +582,7 @@
                 }
               ]
             },
-            "description": "Thống kê top khách hàng mua nhiều"
+            "description": "Thống kê top khách hàng mua nhiều - Response bao gồm: totalSpent, totalOrders, totalDebt"
           }
         },
         {
@@ -1091,6 +1091,75 @@
               ]
             },
             "description": "Lấy chi tiết công nợ (bao gồm lịch sử trả nợ)"
+          }
+        },
+        {
+          "name": "Create Debt (Tạo công nợ thủ công)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": 1,\n  \"totalAmount\": 500000,\n  \"paidAmount\": 0,\n  \"note\": \"Công nợ cũ từ trước\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/debts",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "debts"]
+            },
+            "description": "Tạo công nợ thủ công - Dùng để nhập nợ cũ không liên kết với giao dịch bán hàng"
+          }
+        },
+        {
+          "name": "Update Debt (Sửa công nợ)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"totalAmount\": 450000,\n  \"paidAmount\": 100000,\n  \"note\": \"Điều chỉnh số tiền nợ\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/debts/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "debts", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Cập nhật công nợ - Điều chỉnh số tiền nợ hoặc số tiền đã trả"
+          }
+        },
+        {
+          "name": "Delete Debt (Xóa công nợ)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/debts/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "debts", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Xóa công nợ - Xóa bỏ khoản nợ (hủy nợ, xóa nợ cho khách). Lịch sử thanh toán cũng sẽ bị xóa"
           }
         },
         {

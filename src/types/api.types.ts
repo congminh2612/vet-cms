@@ -108,6 +108,13 @@ export interface Customer {
   note?: string;
   createdAt?: string;
   updatedAt?: string;
+  // Công nợ (từ API response)
+  totalDebt?: number | string; // Tổng nợ còn lại
+  debtCount?: number; // Số khoản nợ chưa thanh toán
+  debts?: Debt[]; // Danh sách công nợ chi tiết (khi getById)
+  pendingDebts?: number; // Số khoản nợ chưa trả hết
+  totalSpent?: number | string; // Tổng đã chi tiêu
+  totalOrders?: number; // Tổng số đơn hàng
 }
 
 export interface CreateCustomerRequest {
@@ -176,6 +183,7 @@ export interface CashInRequest {
   customerId?: number;
   note?: string;
   items?: CashInItem[]; // Khi có items, sẽ tự động tính amount và xuất kho
+  paidAmount?: number; // Số tiền khách trả ngay (cho bán hàng nợ). Nếu paidAmount < tổng tiền → tự động tạo công nợ
 }
 
 export interface CashOutRequest {
@@ -233,5 +241,113 @@ export interface SalesByDate {
   revenue: number;
   expense: number;
   profit: number;
+}
+
+// ==================== Debts (Công nợ) ====================
+export type DebtStatus = "PENDING" | "PARTIAL" | "PAID";
+
+export interface Debt {
+  id: number;
+  customerId: number;
+  customer?: Customer;
+  invoiceId?: number;
+  invoice?: Invoice;
+  totalAmount: number; // Tổng số tiền nợ
+  paidAmount: number; // Số tiền đã trả
+  remainingAmount: number; // Số tiền còn lại
+  status: DebtStatus;
+  note?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  paymentHistory?: DebtPayment[];
+}
+
+export interface DebtPayment {
+  id: number;
+  debtId: number;
+  amount: number;
+  note?: string;
+  createdAt?: string;
+}
+
+export interface DebtsQueryParams {
+  page?: number;
+  limit?: number;
+  customerId?: number;
+  status?: DebtStatus;
+}
+
+export interface DebtStats {
+  totalDebt: number; // Tổng nợ
+  totalPaid: number; // Tổng đã trả
+  totalRemaining: number; // Tổng còn lại
+  totalDebts: number; // Số lượng công nợ
+  topDebtors?: TopDebtor[];
+}
+
+export interface TopDebtor {
+  customerId: number;
+  customer: Customer;
+  totalDebt: number;
+  totalPaid: number;
+  remainingAmount: number;
+}
+
+export interface PayDebtRequest {
+  amount: number;
+  note?: string;
+}
+
+export interface CreateDebtRequest {
+  customerId: number;
+  totalAmount: number;
+  paidAmount?: number; // Mặc định 0 nếu không có
+  note?: string;
+}
+
+export interface UpdateDebtRequest {
+  totalAmount?: number;
+  paidAmount?: number;
+  note?: string;
+}
+
+// ==================== Invoices (Hóa đơn) ====================
+export interface InvoiceItem {
+  id: number;
+  productId: number;
+  product?: Product;
+  quantity: number;
+  unitPrice: number | string;
+  totalPrice: number | string;
+}
+
+export interface Invoice {
+  id: number;
+  invoiceNumber?: string; // Số hóa đơn
+  customerId?: number;
+  customer?: Customer;
+  cashLogId?: number;
+  cashLog?: CashLog;
+  items?: InvoiceItem[];
+  totalAmount: number | string; // API trả string "1100000.00"
+  paidAmount?: number | string; // Số tiền đã trả
+  amountReceived?: number | string; // API list trả field này thay vì paidAmount
+  hasDebt: boolean; // Có công nợ hay không
+  debt?: Debt; // Thông tin công nợ (khi getById)
+  debtStatus?: string | null; // "PENDING" | "PARTIAL" | "PAID" | null (từ API list)
+  remainingDebt?: number | string; // Còn nợ (từ API list)
+  itemCount?: number; // Số sản phẩm (từ API list)
+  note?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface InvoicesQueryParams {
+  page?: number;
+  limit?: number;
+  customerId?: number;
+  startDate?: string;
+  endDate?: string;
+  hasDebt?: boolean;
 }
 

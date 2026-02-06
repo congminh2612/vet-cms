@@ -154,6 +154,7 @@ export function ProductForm({
                       value={field.value}
                       onChange={(value) => field.onChange(value)}
                       onBlur={field.onBlur}
+                      suffix="VNĐ"
                     />
                   )}
                 />
@@ -185,6 +186,7 @@ export function ProductForm({
                       value={field.value}
                       onChange={(value) => field.onChange(value)}
                       onBlur={field.onBlur}
+                      suffix="VNĐ"
                     />
                   )}
                 />

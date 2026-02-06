@@ -22,7 +22,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Search, Pencil, Trash2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Search, Pencil, Trash2, CreditCard } from "lucide-react";
 import type {
   CustomersQueryParams,
   Customer,
@@ -31,6 +39,8 @@ import type {
 } from "@/types/api.types";
 import { toast } from "sonner";
 import { CustomerForm } from "./CustomerForm";
+import { CustomerDebts } from "./CustomerDebts";
+import { formatCurrency, parseNumber } from "@/utils/number-utils";
 
 export function CustomersPage() {
   const queryClient = useQueryClient();
@@ -42,6 +52,9 @@ export function CustomersPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [deleteCustomerId, setDeleteCustomerId] = useState<number | null>(null);
+  const [viewDebtsCustomer, setViewDebtsCustomer] = useState<Customer | null>(
+    null
+  );
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["customers", queryParams],
@@ -181,6 +194,7 @@ export function CustomersPage() {
                       Số điện thoại
                     </TableHead>
                     <TableHead className="hidden md:table-cell">Địa chỉ</TableHead>
+                    <TableHead className="text-right">Công nợ</TableHead>
                     <TableHead className="w-[120px]">Thao tác</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -188,49 +202,80 @@ export function CustomersPage() {
                   {!data?.data || data.data.length === 0 ? (
                     <TableRow>
                       <TableCell
-                        colSpan={5}
+                        colSpan={6}
                         className="text-center text-muted-foreground py-8"
                       >
                         Không có khách hàng nào
                       </TableCell>
                     </TableRow>
                   ) : (
-                    data.data.map((customer: Customer) => (
-                      <TableRow key={customer.id}>
-                        <TableCell className="font-medium">
-                          {customer.id}
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {customer.name}
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                          {customer.phone || "-"}
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          {customer.address || "-"}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleEdit(customer)}
-                              className="h-8 w-8"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDelete(customer.id)}
-                              className="h-8 w-8 text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
+                    data.data.map((customer: Customer) => {
+                      const totalDebt = parseNumber(customer.totalDebt);
+                      const debtCount = customer.debtCount ?? 0;
+                      return (
+                        <TableRow key={customer.id}>
+                          <TableCell className="font-medium">
+                            {customer.id}
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {customer.name}
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell">
+                            {customer.phone || "-"}
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            {customer.address || "-"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {totalDebt > 0 ? (
+                              <div className="flex flex-col items-end gap-1">
+                                <span className="font-semibold text-red-600">
+                                  {formatCurrency(totalDebt)}
+                                </span>
+                                {debtCount > 0 && (
+                                  <Badge variant="destructive" className="text-xs">
+                                    {debtCount} khoản nợ
+                                  </Badge>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">0 ₫</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              {totalDebt > 0 && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => setViewDebtsCustomer(customer)}
+                                  className="h-8 w-8"
+                                  title="Xem công nợ"
+                                >
+                                  <CreditCard className="h-4 w-4" />
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEdit(customer)}
+                                className="h-8 w-8"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDelete(customer.id)}
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>
@@ -287,6 +332,32 @@ export function CustomersPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Customer Debts Dialog */}
+      <Dialog
+        open={viewDebtsCustomer !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setViewDebtsCustomer(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Công nợ của khách hàng</DialogTitle>
+            <DialogDescription>
+              {viewDebtsCustomer?.name}
+            </DialogDescription>
+          </DialogHeader>
+          {viewDebtsCustomer && (
+            <CustomerDebts
+              customerId={viewDebtsCustomer.id}
+              customerName={viewDebtsCustomer.name}
+              onClose={() => setViewDebtsCustomer(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

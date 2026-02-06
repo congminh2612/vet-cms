@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -20,10 +20,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  SearchableSelect,
+  type SearchableSelectOption,
+} from "@/components/ui/searchable-select";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { customersService } from "@/services/customers.service";
 import { productsService } from "@/services/products.service";
-import { Plus, Trash2, UserPlus } from "lucide-react";
+import { formatCurrency, parseNumber } from "@/utils/number-utils";
+import { Plus, Trash2, UserPlus, ShoppingCart, Package } from "lucide-react";
 import { toast } from "sonner";
 import type {
   CashLog,
@@ -76,20 +82,26 @@ export function CashForm({
     },
   });
 
+  const [paidAmount, setPaidAmount] = useState<number | undefined>(undefined);
+
   const {
     register,
     handleSubmit,
     reset,
     control,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<CashInRequest | CashOutRequest | UpdateCashLogRequest>({
     defaultValues: {
       amount: 0,
       customerId: undefined,
       note: "",
+      paidAmount: undefined,
     },
   });
+
+  const selectedCustomerId = watch("customerId");
 
   // Lấy danh sách khách hàng (chỉ cho thu tiền)
   const { data: customersData } = useQuery({
@@ -123,13 +135,38 @@ export function CashForm({
   const {
     data: productsData,
     isLoading: isLoadingProducts,
-    error: productsError,
   } = useQuery({
     queryKey: ["products", "all"],
     queryFn: () => productsService.getAll({ page: 1, limit: 1000 }),
     enabled: open && !isStockOut && !isEdit,
   });
 
+  // Tạo danh sách options cho SearchableSelect khách hàng
+  const customerOptions: SearchableSelectOption[] = useMemo(() => {
+    const opts: SearchableSelectOption[] = [
+      { value: "none", label: "Không chọn khách hàng" },
+    ];
+    if (customersData?.data) {
+      customersData.data.forEach((c) => {
+        opts.push({
+          value: c.id.toString(),
+          label: c.name,
+          sublabel: [c.phone, c.address].filter(Boolean).join(" • ") || undefined,
+        });
+      });
+    }
+    return opts;
+  }, [customersData]);
+
+  // Tạo danh sách options cho SearchableSelect sản phẩm
+  const productOptions: SearchableSelectOption[] = useMemo(() => {
+    if (!productsData?.data || !Array.isArray(productsData.data)) return [];
+    return productsData.data.map((p) => ({
+      value: p.id.toString(),
+      label: `${p.name}${p.unit ? ` (${p.unit})` : ""}`,
+      sublabel: `Giá: ${formatCurrency(parseNumber(p.sellPrice))} — Tồn: ${p.stock ?? 0}`,
+    }));
+  }, [productsData]);
 
   useEffect(() => {
     if (!open) {
@@ -137,11 +174,13 @@ export function CashForm({
         amount: 0,
         customerId: undefined,
         note: "",
+        paidAmount: undefined,
       });
       // Reset state khi form đóng
       setTimeout(() => {
         setMode("simple");
         setItems([]);
+        setPaidAmount(undefined);
         setOpenNewCustomer(false);
         resetCustomer();
       }, 0);
@@ -156,10 +195,12 @@ export function CashForm({
         amount: 0,
         customerId: undefined,
         note: "",
+        paidAmount: undefined,
       });
       setTimeout(() => {
         setMode("simple");
         setItems([]);
+        setPaidAmount(undefined);
       }, 0);
     }
   }, [cashLog, reset, open, resetCustomer]);
@@ -230,6 +271,11 @@ export function CashForm({
                 ? Number(item.unitPrice)
                 : undefined,
           })),
+          // paidAmount: undefined = trả đủ, 0 = chưa trả, >0 = trả một phần
+          paidAmount:
+            paidAmount !== undefined
+              ? Number(paidAmount)
+              : undefined,
         };
         onSubmit(formattedData);
       } else {
@@ -316,28 +362,21 @@ export function CashForm({
                 name="customerId"
                 control={control}
                 render={({ field }) => (
-                  <Select
+                  <SearchableSelect
+                    id="customerId"
+                    options={customerOptions}
                     value={field.value?.toString() || "none"}
                     onValueChange={(value) =>
-                      field.onChange(value === "none" ? undefined : Number(value))
+                      field.onChange(
+                        value === "none" || value === ""
+                          ? undefined
+                          : Number(value)
+                      )
                     }
-                  >
-                    <SelectTrigger id="customerId">
-                      <SelectValue placeholder="Chọn khách hàng (tùy chọn)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Không chọn</SelectItem>
-                      {customersData?.data.map((customer) => (
-                        <SelectItem
-                          key={customer.id}
-                          value={customer.id.toString()}
-                        >
-                          {customer.name}
-                          {customer.phone && ` - ${customer.phone}`}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder="Tìm & chọn khách hàng..."
+                    searchPlaceholder="Nhập tên hoặc SĐT khách hàng..."
+                    emptyMessage="Không tìm thấy khách hàng"
+                  />
                 )}
               />
             </div>
@@ -356,28 +395,70 @@ export function CashForm({
 
           {mode === "withItems" && !isStockOut && !isEdit && (
             <div className="space-y-4">
+              {/* Header sản phẩm */}
               <div className="flex items-center justify-between">
-                <Label>Sản phẩm bán</Label>
+                <div className="flex items-center gap-2">
+                  <ShoppingCart className="h-4 w-4 text-primary" />
+                  <Label className="text-base font-semibold">Sản phẩm bán</Label>
+                  {items.length > 0 && (
+                    <Badge variant="secondary" className="text-xs">
+                      {items.length} sản phẩm
+                    </Badge>
+                  )}
+                </div>
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="default"
                   size="sm"
                   onClick={addItem}
+                  className="gap-1.5"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Thêm sản phẩm
+                  <Plus className="h-4 w-4" />
+                  Thêm
                 </Button>
               </div>
 
+              {/* Empty state */}
               {items.length === 0 ? (
-                <Card className="p-4 text-center text-muted-foreground">
-                  {isLoadingProducts ? (
-                    <p>Đang tải danh sách sản phẩm...</p>
-                  ) : productsData?.data && productsData.data.length === 0 ? (
-                    <p className="text-destructive">
-                      Chưa có sản phẩm nào trong cửa hàng. Vui lòng thêm sản phẩm trước.
-                    </p>
-                  ) : null}
+                <Card className="border-dashed border-2">
+                  <div className="flex flex-col items-center justify-center py-8 px-4">
+                    {isLoadingProducts ? (
+                      <>
+                        <div className="h-10 w-10 rounded-full bg-muted animate-pulse mb-3" />
+                        <p className="text-sm text-muted-foreground">Đang tải sản phẩm...</p>
+                      </>
+                    ) : productsData?.data && productsData.data.length === 0 ? (
+                      <>
+                        <Package className="h-10 w-10 text-muted-foreground/50 mb-3" />
+                        <p className="text-sm font-medium text-destructive">
+                          Chưa có sản phẩm nào
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Vui lòng thêm sản phẩm trong phần quản lý sản phẩm trước
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingCart className="h-10 w-10 text-muted-foreground/50 mb-3" />
+                        <p className="text-sm font-medium text-muted-foreground">
+                          Chưa có sản phẩm nào
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1 mb-3">
+                          Nhấn "Thêm" để bắt đầu thêm sản phẩm bán
+                        </p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={addItem}
+                          className="gap-1.5"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          Thêm sản phẩm đầu tiên
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </Card>
               ) : (
                 <div className="space-y-3">
@@ -387,135 +468,135 @@ export function CashForm({
                     );
                     const unitPrice = item.unitPrice ?? product?.sellPrice ?? 0;
                     const itemTotal = unitPrice * item.quantity;
+                    const stockLevel = product?.stock ?? 0;
+                    const isLowStock = stockLevel > 0 && stockLevel <= 10;
+                    const isOutOfStock = stockLevel === 0 && product;
 
                     return (
-                      <Card key={index} className="p-4">
-                        <div className="grid gap-3 md:grid-cols-12">
-                          <div className="md:col-span-4">
-                            <Label className="text-sm">Sản phẩm *</Label>
-                            <Select
+                      <Card
+                        key={index}
+                        className="overflow-hidden transition-shadow hover:shadow-md"
+                      >
+                        {/* Item header */}
+                        <div className="flex items-center justify-between bg-muted/50 px-4 py-2 border-b">
+                          <div className="flex items-center gap-2">
+                            <span className="flex items-center justify-center h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                              {index + 1}
+                            </span>
+                            <span className="text-sm font-medium truncate">
+                              {product ? product.name : "Chọn sản phẩm"}
+                            </span>
+                            {product && product.unit && (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                {product.unit}
+                              </Badge>
+                            )}
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => removeItem(index)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+
+                        {/* Item body */}
+                        <div className="p-4 space-y-3">
+                          {/* Product select */}
+                          <div>
+                            <Label className="text-xs text-muted-foreground mb-1 block">
+                              Sản phẩm <span className="text-destructive">*</span>
+                            </Label>
+                            <SearchableSelect
+                              options={productOptions}
                               value={
                                 item.productId > 0
                                   ? item.productId.toString()
-                                  : "none"
+                                  : ""
                               }
                               onValueChange={(value) =>
                                 updateItem(
                                   index,
                                   "productId",
-                                  value === "none" ? 0 : Number(value)
+                                  value === "" ? 0 : Number(value)
                                 )
                               }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Chọn sản phẩm từ cửa hàng" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">Chọn sản phẩm</SelectItem>
-                                {(() => {
-                                  if (isLoadingProducts) {
-                                    return (
-                                      <SelectItem value="none" disabled>
-                                        Đang tải...
-                                      </SelectItem>
-                                    );
-                                  }
-                                  if (productsError) {
-                                    return (
-                                      <SelectItem value="none" disabled>
-                                        Lỗi khi tải sản phẩm
-                                      </SelectItem>
-                                    );
-                                  }
-                                  if (!productsData) {
-                                    return (
-                                      <SelectItem value="none" disabled>
-                                        Đang tải...
-                                      </SelectItem>
-                                    );
-                                  }
-                                  if (!productsData.data || !Array.isArray(productsData.data)) {
-                                    return (
-                                      <SelectItem value="none" disabled>
-                                        Dữ liệu không hợp lệ
-                                      </SelectItem>
-                                    );
-                                  }
-                                  if (productsData.data.length === 0) {
-                                    return (
-                                      <SelectItem value="none" disabled>
-                                        Chưa có sản phẩm trong cửa hàng
-                                      </SelectItem>
-                                    );
-                                  }
-                                  return productsData.data.map((p) => (
-                                    <SelectItem
-                                      key={p.id}
-                                      value={p.id.toString()}
-                                    >
-                                      {p.name} {p.unit && `(${p.unit})`}
-                                      {p.stock !== undefined && ` - Tồn: ${p.stock}`}
-                                    </SelectItem>
-                                  ));
-                                })()}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="md:col-span-2">
-                            <Label className="text-sm">Số lượng *</Label>
-                            <Input
-                              type="number"
-                              min="1"
-                              value={item.quantity || ""}
-                              onChange={(e) =>
-                                updateItem(
-                                  index,
-                                  "quantity",
-                                  Number(e.target.value) || 1
-                                )
-                              }
-                              placeholder="0"
+                              placeholder="Tìm & chọn sản phẩm..."
+                              searchPlaceholder="Nhập tên sản phẩm..."
+                              emptyMessage="Không tìm thấy sản phẩm"
+                              isLoading={isLoadingProducts}
                             />
-                            {product && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Tồn: {product.stock ?? 0}
-                              </p>
-                            )}
                           </div>
 
-                          <div className="md:col-span-3">
-                            <Label className="text-sm">Đơn giá (VNĐ)</Label>
-                            <NumberInput
-                              value={item.unitPrice ?? product?.sellPrice ?? 0}
-                              onChange={(value) =>
-                                updateItem(index, "unitPrice", value)
-                              }
-                              placeholder="0"
-                              formatOnBlur
-                            />
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Mặc định: {product?.sellPrice?.toLocaleString("vi-VN") || 0} VNĐ
-                            </p>
-                          </div>
-
-                          <div className="md:col-span-2">
-                            <Label className="text-sm">Thành tiền</Label>
-                            <div className="h-10 flex items-center font-semibold">
-                              {itemTotal.toLocaleString("vi-VN")} VNĐ
+                          {/* Quantity + Price row */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <Label className="text-xs text-muted-foreground mb-1 block">
+                                Số lượng <span className="text-destructive">*</span>
+                              </Label>
+                              <Input
+                                type="number"
+                                min="1"
+                                value={item.quantity || ""}
+                                onChange={(e) =>
+                                  updateItem(
+                                    index,
+                                    "quantity",
+                                    Number(e.target.value) || 1
+                                  )
+                                }
+                                placeholder="0"
+                              />
+                              {product && (
+                                <p
+                                  className={`text-xs mt-1 ${
+                                    isOutOfStock
+                                      ? "text-destructive font-medium"
+                                      : isLowStock
+                                      ? "text-orange-500"
+                                      : "text-muted-foreground"
+                                  }`}
+                                >
+                                  Tồn kho: {stockLevel}
+                                  {isOutOfStock && " (Hết hàng!)"}
+                                  {isLowStock && " (Sắp hết)"}
+                                </p>
+                              )}
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground mb-1 block">
+                                Đơn giá
+                              </Label>
+                              <NumberInput
+                                value={item.unitPrice ?? product?.sellPrice ?? 0}
+                                onChange={(value) =>
+                                  updateItem(index, "unitPrice", value)
+                                }
+                                placeholder="0"
+                                suffix="VNĐ"
+                              />
+                              {product && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Giá gốc: {formatCurrency(product.sellPrice)}
+                                </p>
+                              )}
                             </div>
                           </div>
 
-                          <div className="md:col-span-1 flex items-end">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeItem(index)}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
+                          {/* Subtotal */}
+                          {item.productId > 0 && (
+                            <div className="flex items-center justify-between pt-2 border-t border-dashed">
+                              <span className="text-sm text-muted-foreground">
+                                Thành tiền:
+                              </span>
+                              <span className="text-sm font-bold text-primary">
+                                {formatCurrency(itemTotal)}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </Card>
                     );
@@ -523,15 +604,109 @@ export function CashForm({
                 </div>
               )}
 
+              {/* Tổng kết & thanh toán */}
               {items.length > 0 && (
-                <Card className="p-4 bg-muted">
-                  <div className="flex justify-between items-center">
-                    <span className="font-semibold">Tổng tiền:</span>
-                    <span className="text-lg font-bold">
-                      {totalFromItems.toLocaleString("vi-VN")} VNĐ
-                    </span>
-                  </div>
-                </Card>
+                <div className="space-y-3">
+                  {/* Tổng tiền */}
+                  <Card className="overflow-hidden">
+                    <div className="bg-primary/5 border-b px-4 py-3">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <ShoppingCart className="h-4 w-4 text-primary" />
+                          <span className="font-semibold">Tổng cộng</span>
+                          <span className="text-xs text-muted-foreground">
+                            ({items.filter((i) => i.productId > 0).length} sản phẩm)
+                          </span>
+                        </div>
+                        <span className="text-lg font-bold text-primary">
+                          {formatCurrency(totalFromItems)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Thanh toán - chỉ hiển thị khi có khách hàng */}
+                    {selectedCustomerId && (
+                      <div className="p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="paidAmount" className="text-sm font-medium">
+                            Khách trả ngay
+                          </Label>
+                          <span className="text-xs text-muted-foreground">
+                            Để trống = trả đủ, nhập 0 = chưa trả
+                          </span>
+                        </div>
+                        <NumberInput
+                          id="paidAmount"
+                          value={paidAmount !== undefined ? paidAmount : ""}
+                          onChange={(value) => {
+                            setPaidAmount(value);
+                            setValue("paidAmount", value);
+                          }}
+                          placeholder={`${new Intl.NumberFormat("vi-VN").format(totalFromItems)} (trả đủ)`}
+                          suffix="VNĐ"
+                          allowZero
+                        />
+
+                        {/* Progress bar */}
+                        {paidAmount !== undefined && totalFromItems > 0 && (
+                          <div className="space-y-2">
+                            <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-300 ${
+                                  paidAmount >= totalFromItems
+                                    ? "bg-green-500"
+                                    : paidAmount >= totalFromItems * 0.5
+                                    ? "bg-orange-400"
+                                    : "bg-red-400"
+                                }`}
+                                style={{
+                                  width: `${Math.min(100, (paidAmount / totalFromItems) * 100)}%`,
+                                }}
+                              />
+                            </div>
+
+                            <div className="rounded-lg border p-3 space-y-1.5">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Tổng tiền:</span>
+                                <span className="font-medium">
+                                  {formatCurrency(totalFromItems)}
+                                </span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Đã trả:</span>
+                                <span className="font-semibold text-green-600">
+                                  {formatCurrency(paidAmount)}
+                                </span>
+                              </div>
+                              {paidAmount < totalFromItems && (
+                                <div className="flex justify-between text-sm border-t pt-1.5">
+                                  <span className="text-muted-foreground">Còn nợ:</span>
+                                  <span className="font-semibold text-red-600">
+                                    {formatCurrency(totalFromItems - paidAmount)}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            {paidAmount >= totalFromItems ? (
+                              <div className="flex items-center gap-1.5 text-xs text-green-600 bg-green-50 dark:bg-green-500/10 px-3 py-2 rounded-md">
+                                <span>✓</span>
+                                <span className="font-medium">Khách hàng trả đủ, không có công nợ</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1.5 text-xs text-orange-600 bg-orange-50 dark:bg-orange-500/10 px-3 py-2 rounded-md">
+                                <span>⚠</span>
+                                <span className="font-medium">
+                                  Sẽ tự động tạo công nợ: {formatCurrency(totalFromItems - paidAmount)}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </Card>
+                </div>
               )}
             </div>
           )}
@@ -555,7 +730,7 @@ export function CashForm({
                     value={field.value || 0}
                     onChange={(value) => field.onChange(value)}
                     placeholder="0"
-                    formatOnBlur
+                    suffix="VNĐ"
                   />
                 )}
               />
